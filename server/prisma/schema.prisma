@@ -1,0 +1,156 @@
+// Prisma Schema for AI Whiteboard
+// Using standard PostgreSQL only
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BoardRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id                    String             @id @default(uuid()) @db.Uuid
+  name                  String             @db.VarChar(100)
+  email                 String             @unique @db.VarChar(255)
+  passwordHash          String             @map("password_hash") @db.VarChar(255)
+  avatarUrl             String?            @map("avatar_url") @db.VarChar(500)
+  resetPasswordToken    String?            @map("reset_password_token") @db.VarChar(255)
+  resetPasswordExpiresAt DateTime?         @map("reset_password_expires_at")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  // Relationships
+  ownedWhiteboards      Whiteboard[]       @relation("BoardOwner")
+  memberships           WhiteboardMember[] @relation("BoardMemberUser")
+  invitedMemberships    WhiteboardMember[] @relation("BoardMemberInviter")
+  createdElements       Element[]          @relation("ElementCreator")
+  refreshTokens         RefreshToken[]
+  uploads               Upload[]
+  aiUsages              AiUsage[]
+
+  @@map("users")
+}
+
+model Whiteboard {
+  id           String             @id @default(uuid()) @db.Uuid
+  title        String             @db.VarChar(255)
+  description  String?            @db.Text
+  thumbnailUrl String?            @map("thumbnail_url") @db.VarChar(500)
+  ownerId      String             @map("owner_id") @db.Uuid
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  // Relationships
+  owner        User               @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      WhiteboardMember[]
+  elements     Element[]
+  uploads      Upload[]
+  aiUsages     AiUsage[]
+
+  @@index([ownerId])
+  @@map("whiteboards")
+}
+
+model WhiteboardMember {
+  id           String     @id @default(uuid()) @db.Uuid
+  whiteboardId String     @map("whiteboard_id") @db.Uuid
+  userId       String     @map("user_id") @db.Uuid
+  role         BoardRole  @default(EDITOR)
+  invitedById  String?    @map("invited_by") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  // Relationships
+  whiteboard   Whiteboard @relation(fields: [whiteboardId], references: [id], onDelete: Cascade)
+  user         User       @relation("BoardMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy    User?      @relation("BoardMemberInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([whiteboardId, userId])
+  @@index([userId])
+  @@index([whiteboardId])
+  @@map("whiteboard_members")
+}
+
+model Element {
+  id           String     @id @default(uuid()) @db.Uuid
+  whiteboardId String     @map("whiteboard_id") @db.Uuid
+  type         String     @db.VarChar(50)
+  data         Json       @db.JsonB
+  positionX    Float      @default(0.0) @map("position_x")
+  positionY    Float      @default(0.0) @map("position_y")
+  width        Float      @default(100.0)
+  height       Float      @default(100.0)
+  rotation     Float      @default(0.0)
+  zIndex       Int        @default(0) @map("z_index")
+  createdById  String?    @map("created_by") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relationships
+  whiteboard   Whiteboard @relation(fields: [whiteboardId], references: [id], onDelete: Cascade)
+  createdBy    User?      @relation("ElementCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([whiteboardId])
+  @@index([whiteboardId, zIndex])
+  @@map("elements")
+}
+
+model AiUsage {
+  id           String      @id @default(uuid()) @db.Uuid
+  userId       String      @map("user_id") @db.Uuid
+  whiteboardId String?     @map("whiteboard_id") @db.Uuid
+  actionType   String      @map("action_type") @db.VarChar(50)
+  model        String      @db.VarChar(50)
+  tokenUsage   Int         @default(0) @map("token_usage")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  // Relationships
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whiteboard   Whiteboard? @relation(fields: [whiteboardId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([whiteboardId])
+  @@map("ai_usage")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  // Relationships
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model Upload {
+  id               String      @id @default(uuid()) @db.Uuid
+  userId           String      @map("user_id") @db.Uuid
+  whiteboardId     String?     @map("whiteboard_id") @db.Uuid
+  originalFilename String      @map("original_filename") @db.VarChar(255)
+  storageKey       String      @unique @map("storage_key") @db.VarChar(500)
+  mimeType         String      @map("mime_type") @db.VarChar(100)
+  fileSize         BigInt      @map("file_size")
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  // Relationships
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whiteboard       Whiteboard? @relation(fields: [whiteboardId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([whiteboardId])
+  @@map("uploads")
+}
