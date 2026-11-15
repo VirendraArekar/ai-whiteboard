@@ -1,0 +1,39 @@
+{
+  "name": "ai-whiteboard",
+  "version": "1.0.0",
+  "description": "An AI-powered collaborative whiteboard built with React, NestJS, PostgreSQL, Socket.IO, and Google Gemini",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "npm --workspace=client run dev",
+    "dev:server": "npm --workspace=server run start:dev",
+    "build": "npm --workspace=server run build && npm --workspace=client run build",
+    "build:client": "npm --workspace=client run build",
+    "build:server": "npm --workspace=server run build",
+    "test": "npm --workspace=server run test && npm --workspace=client run test",
+    "lint": "npm --workspace=server run lint && npm --workspace=client run lint",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.5.0"
+  },
+  "keywords": [
+    "whiteboard",
+    "ai",
+    "gemini",
+    "react",
+    "nestjs",
+    "collaboration",
+    "socketio",
+    "postgresql"
+  ],
+  "author": "Virendra Arekar",
+  "license": "MIT"
+}
