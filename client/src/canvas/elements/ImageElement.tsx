@@ -6,7 +6,25 @@ export const ImageElement: React.FC<ElementProps> = ({ element }) => {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const url = element.data?.url || element.data?.proxyUrl;
+  // Helper to normalize and resolve image URL safely across local, docker, and cloud environments
+  const getResolvedUrl = (rawUrl?: string, proxyUrl?: string) => {
+    // If proxyUrl is provided, it is always the safest same-origin path
+    const candidate = proxyUrl || rawUrl || '';
+    if (!candidate) return '';
+
+    // If candidate points to Docker's internal 'minio:9000' or S3 bucket path, convert to proxy stream URL
+    if (candidate.includes('//minio:9000/') || candidate.includes('/ai-whiteboard/uploads/')) {
+      const match = candidate.match(/uploads\/[^?#]+/);
+      if (match) {
+        return `/api/uploads/file/${match[0]}`;
+      }
+    }
+    return candidate;
+  };
+
+  const initialUrl = getResolvedUrl(element.data?.url, element.data?.proxyUrl);
+  const [currentSrc, setCurrentSrc] = useState<string>(initialUrl);
+
   const stroke = element.data?.stroke || 'transparent';
   const strokeWidth = element.data?.strokeWidth ?? 0;
   const fill = element.data?.fill || 'transparent';
@@ -24,26 +42,37 @@ export const ImageElement: React.FC<ElementProps> = ({ element }) => {
       }}
     >
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80 dark:bg-gray-900/80 z-10">
           <Loader2 className="w-5 h-5 text-[#2D6A4F] animate-spin" />
         </div>
       )}
 
-      {hasError || !url ? (
+      {hasError || !currentSrc ? (
         <div className="flex flex-col items-center justify-center text-gray-400 p-2 text-center">
           <ImageOff className="w-6 h-6 mb-1" />
           <span className="text-[10px]">Image Unavailable</span>
         </div>
       ) : (
         <img
-          src={url}
-          alt="Whiteboard Asset"
-          onLoad={() => setIsLoading(false)}
-          onError={() => {
+          src={currentSrc}
+          alt={element.data?.originalFilename || "Whiteboard Asset"}
+          crossOrigin="anonymous"
+          onLoad={() => {
             setIsLoading(false);
-            setHasError(true);
+            setHasError(false);
           }}
-          className="w-full h-full object-contain pointer-events-none"
+          onError={() => {
+            // Fallback: If primary URL failed and we haven't tried proxyUrl yet, try proxyUrl
+            if (element.data?.proxyUrl && currentSrc !== element.data.proxyUrl) {
+              setCurrentSrc(element.data.proxyUrl);
+            } else if (element.data?.url && currentSrc !== element.data.url && !element.data.url.includes('minio:9000')) {
+              setCurrentSrc(element.data.url);
+            } else {
+              setIsLoading(false);
+              setHasError(true);
+            }
+          }}
+          className="w-full h-full object-contain pointer-events-none select-none"
         />
       )}
     </div>

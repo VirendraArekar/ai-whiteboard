@@ -114,33 +114,75 @@ export const WhiteboardPage: React.FC = () => {
     }
   };
 
-  // Image Upload handler
-  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !boardId) return;
+  // Reusable Image Upload & Placement handler
+  const uploadAndPlaceImage = async (file: File, position?: { x: number; y: number }) => {
+    if (!boardId) return;
+
+    if (!file.type.startsWith('image/')) {
+      notify.error('Please select a valid image file (PNG, JPG, WebP, SVG, GIF)', 'Invalid File');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      notify.error('Image size exceeds 5MB limit', 'File Too Large');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('whiteboardId', boardId);
 
-    const toastId = notify.info('Uploading image asset...', 'Upload');
+    notify.info('Uploading image asset...', 'Upload');
     try {
-      const { data } = await api.post('/uploads', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Do not manually override Content-Type header so browser appends boundary parameter
+      const { data } = await api.post('/uploads', formData);
+
+      // Pre-calculate natural image dimensions to avoid aspect ratio distortion
+      let imgWidth = 360;
+      let imgHeight = 240;
+      try {
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+        img.src = objectUrl;
+        await new Promise((resolve) => {
+          img.onload = () => {
+            const maxDim = 400;
+            if (img.naturalWidth && img.naturalHeight) {
+              if (img.naturalWidth >= img.naturalHeight) {
+                imgWidth = maxDim;
+                imgHeight = Math.round((img.naturalHeight / img.naturalWidth) * maxDim);
+              } else {
+                imgHeight = maxDim;
+                imgWidth = Math.round((img.naturalWidth / img.naturalHeight) * maxDim);
+              }
+            }
+            URL.revokeObjectURL(objectUrl);
+            resolve(true);
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(false);
+          };
+        });
+      } catch {
+        // Fallback to default dimensions
+      }
+
+      const posX = position ? Math.round(position.x - imgWidth / 2) : 220;
+      const posY = position ? Math.round(position.y - imgHeight / 2) : 180;
 
       const newImageElement: CanvasElement = {
         id: crypto.randomUUID(),
         whiteboardId: boardId,
         type: 'image',
-        positionX: 200,
-        positionY: 200,
-        width: 320,
-        height: 240,
+        positionX: Math.max(40, posX),
+        positionY: Math.max(40, posY),
+        width: imgWidth,
+        height: imgHeight,
         rotation: 0,
         zIndex: elements.length + 1,
         data: {
-          url: data.url,
+          url: data.proxyUrl || data.url,
           proxyUrl: data.proxyUrl,
           originalFilename: data.originalFilename,
         },
@@ -155,6 +197,44 @@ export const WhiteboardPage: React.FC = () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await uploadAndPlaceImage(file);
+    }
+  };
+
+  // Support clipboard paste of images
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            uploadAndPlaceImage(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [boardId, elements.length]);
 
   // Insert Chart handler
   const handleInsertChart = () => {
@@ -335,8 +415,32 @@ export const WhiteboardPage: React.FC = () => {
         </button>
       )}
 
-      {/* Main Canvas Workspace */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* Main Canvas Workspace with drag-and-drop support */}
+      <div
+        className="flex-1 relative overflow-hidden"
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes('Files')) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+          }
+        }}
+        onDrop={(e) => {
+          const files = e.dataTransfer.files;
+          if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+              if (files[i].type.startsWith('image/')) {
+                e.preventDefault();
+                const rect = e.currentTarget.getBoundingClientRect();
+                uploadAndPlaceImage(files[i], {
+                  x: e.clientX - rect.left,
+                  y: e.clientY - rect.top,
+                });
+                break;
+              }
+            }
+          }
+        }}
+      >
         {/* Drawing Toolbar (Hidden in presentation mode) */}
         {!isViewer && !isPresentationMode && (
           <ToolBar
