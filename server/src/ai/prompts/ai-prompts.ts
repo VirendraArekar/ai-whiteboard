@@ -67,29 +67,163 @@ Return a JSON object with this exact structure:
 }
 
 export function buildDiagramPrompt(prompt: string, diagramType: string = 'architecture'): string {
-  return `
-Create a ${diagramType} diagram for: "${prompt}".
-Include relevant components (services, databases, gateways, clients, message queues) with clear labels and coordinate positions (x between 100 and 900, y between 100 and 700).
-Include directional connectors between components with descriptive labels.
-Return a JSON object with this exact structure:
+  if (diagramType === 'flowchart') {
+    return `
+Create a complete, detailed, production-quality Flowchart for: "${prompt}".
+Design a logical, end-to-end flowchart with 6 to 9 nodes:
+- Start and End nodes: shape "circle" (Start: fill "#DCFCE7", stroke "#16A34A"; End: fill "#FEE2E2", stroke "#DC2626")
+- Process / Action steps: shape "rectangle" (fill "#E0F2FE", stroke "#0284C7")
+- Decision / Conditional branches: shape "diamond" (fill "#FEF3C7", stroke "#D97706")
+- Provide 2 branching connectors from decision nodes with labels "Yes / Valid" and "No / Retry".
+- Organize nodes sequentially with clean layout coordinates:
+  - If horizontal: X coordinates between 100 and 1100, Y between 200 and 450.
+  - Nodes should have width 150-180 and height 70-90.
+- Connect all nodes with directional connectors and meaningful labels.
+
+Return a JSON object conforming strictly to this format:
 {
   "nodes": [
     {
-      "label": "Client App",
-      "shape": "rectangle", // "rectangle" | "circle" | "diamond" | "cylinder"
-      "fill": "#E0F2FE",
-      "stroke": "#0284C7",
-      "x": 100,
-      "y": 200,
-      "width": 140,
-      "height": 70
+      "label": "User Submit",
+      "subtitle": "Form input payload",
+      "badge": "START",
+      "shape": "circle",
+      "fill": "#DCFCE7",
+      "stroke": "#16A34A",
+      "x": 120,
+      "y": 250,
+      "width": 110,
+      "height": 80
     }
   ],
   "connectors": [
     {
       "fromNodeIndex": 0,
       "toNodeIndex": 1,
-      "label": "HTTPS / GraphQL"
+      "label": "Click Submit",
+      "routing": "smooth"
+    }
+  ]
+}
+`;
+  }
+
+  if (diagramType === 'er') {
+    return `
+Create a comprehensive, normalized Entity-Relationship (ER) Database Schema diagram for: "${prompt}".
+Design 4 to 6 database entities/tables:
+- Shape: "cylinder" or "rectangle"
+- fill: "#EDE9FE", stroke: "#7C3AED" (Purple database theme)
+- label: Table Name (e.g. "users", "orders", "payments")
+- subtitle: Primary & Foreign Keys (e.g. "id (PK), email, created_at" or "id (PK), user_id (FK), total, status")
+- badge: "DATABASE"
+- X coordinates between 100 and 950, Y coordinates between 150 and 550.
+- Connectors between related tables with cardinality labels: "1 : N", "1 : 1", or "N : M".
+
+Return a JSON object conforming strictly to this format:
+{
+  "nodes": [
+    {
+      "label": "users",
+      "subtitle": "id (PK), email, name, role",
+      "badge": "DATABASE",
+      "shape": "cylinder",
+      "fill": "#EDE9FE",
+      "stroke": "#7C3AED",
+      "x": 140,
+      "y": 200,
+      "width": 180,
+      "height": 90
+    }
+  ],
+  "connectors": [
+    {
+      "fromNodeIndex": 0,
+      "toNodeIndex": 1,
+      "label": "1 : N",
+      "routing": "smooth"
+    }
+  ]
+}
+`;
+  }
+
+  if (diagramType === 'sequence') {
+    return `
+Create a detailed Protocol & API Sequence Interaction Diagram for: "${prompt}".
+Design 4 to 5 system participants and their message exchange flow:
+- Participants at top: shape "rectangle" (Client, API Gateway, Service, Database)
+- Action steps flowing sequentially downwards with clear step labels ("1. POST /login", "2. Validate Token", "3. SQL Query", "4. 200 OK").
+- Connectors ordered with step numbers and protocols.
+
+Return a JSON object conforming strictly to this format:
+{
+  "nodes": [
+    {
+      "label": "Web Client",
+      "subtitle": "Single Page App",
+      "badge": "CLIENT",
+      "shape": "rectangle",
+      "fill": "#E0F2FE",
+      "stroke": "#0284C7",
+      "x": 100,
+      "y": 150,
+      "width": 160,
+      "height": 75
+    }
+  ],
+  "connectors": [
+    {
+      "fromNodeIndex": 0,
+      "toNodeIndex": 1,
+      "label": "1. HTTPS POST",
+      "routing": "smooth"
+    }
+  ]
+}
+`;
+  }
+
+  // Default: Full Cloud / Microservices Architecture Diagram
+  return `
+Create a comprehensive, production-grade Software Architecture Diagram for: "${prompt}".
+Design a professional, modern multi-tier system with 7 to 10 cohesive components:
+1. Presentation Tier (Left, X: 100-140):
+   - Client Apps (Web App, Mobile App): shape "rectangle", fill "#E0F2FE", stroke "#0284C7", badge "CLIENT"
+2. Edge / Gateway Tier (X: 350-400):
+   - API Gateway / Reverse Proxy: shape "diamond", fill "#FEF3C7", stroke "#D97706", badge "GATEWAY", subtitle "SSL & Rate Limiting"
+3. Application / Microservices Tier (X: 620-680, vertical spread Y: 130, 290, 450):
+   - Auth Service: shape "rectangle", fill "#E8F5E9", stroke "#2D6A4F", badge "SERVICE", subtitle "JWT & Permissions"
+   - Core Business Service: shape "rectangle", fill "#E8F5E9", stroke "#2D6A4F", badge "SERVICE", subtitle "Domain Business Logic"
+   - Worker / Job Queue: shape "rectangle", fill "#FCE7F3", stroke "#DB2777", badge "WORKER", subtitle "Background Tasks"
+4. Data & Persistence Tier (X: 920-980, vertical spread Y: 130, 290, 450):
+   - Redis Cache: shape "cylinder", fill "#FCE7F3", stroke "#DB2777", badge "CACHE", subtitle "In-Memory Session Store"
+   - PostgreSQL / Primary DB: shape "cylinder", fill "#EDE9FE", stroke "#7C3AED", badge "DATABASE", subtitle "Relational Master Data"
+   - Object Storage / S3: shape "cylinder", fill "#EDE9FE", stroke "#7C3AED", badge "STORAGE", subtitle "Media & Asset Storage"
+
+Include directional connectors between components with descriptive labels ("HTTPS / WSS", "gRPC", "SQL Queries", "Pub/Sub", "TCP Cache").
+Return a JSON object conforming strictly to this format:
+{
+  "nodes": [
+    {
+      "label": "Web Client",
+      "subtitle": "React 19 Frontend",
+      "badge": "CLIENT",
+      "shape": "rectangle",
+      "fill": "#E0F2FE",
+      "stroke": "#0284C7",
+      "x": 100,
+      "y": 260,
+      "width": 160,
+      "height": 75
+    }
+  ],
+  "connectors": [
+    {
+      "fromNodeIndex": 0,
+      "toNodeIndex": 1,
+      "label": "HTTPS / WSS",
+      "routing": "smooth"
     }
   ]
 }

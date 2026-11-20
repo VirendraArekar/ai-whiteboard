@@ -226,23 +226,36 @@ export const ShapeElement: React.FC<ElementProps> = ({
         {renderShapePath()}
       </svg>
 
-      {/* Embedded text overlay */}
-      <div className="absolute inset-0 flex items-center justify-center p-2 text-center pointer-events-auto">
+      {/* Embedded text & metadata overlay */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center pointer-events-auto">
+        {/* Optional Role / Category Badge */}
+        {element.data?.badge && (
+          <span
+            className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded-full mb-1 shadow-2xs pointer-events-none select-none"
+            style={{
+              backgroundColor: stroke,
+              color: '#FFFFFF',
+            }}
+          >
+            {element.data.badge}
+          </span>
+        )}
+
         {isEditing ? (
-          <input
-            ref={inputRef}
-            type="text"
+          <textarea
+            ref={inputRef as any}
+            rows={2}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onBlur={handleBlur}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === 'Escape') {
+              if (e.key === 'Escape') {
                 handleBlur();
               }
             }}
-            className="w-full bg-transparent text-center border-none outline-none font-medium"
+            className="w-full bg-transparent text-center border-none outline-none font-medium resize-none"
             style={{
               fontSize: `${fontSize}px`,
               fontFamily,
@@ -253,19 +266,29 @@ export const ShapeElement: React.FC<ElementProps> = ({
             }}
           />
         ) : (
-          <span
-            className="font-medium px-2 py-0.5 rounded pointer-events-none select-none break-words max-w-full"
-            style={{
-              fontSize: `${fontSize}px`,
-              fontFamily,
-              fontWeight,
-              fontStyle,
-              textAlign: textAlign as any,
-              color: stroke,
-            }}
-          >
-            {text}
-          </span>
+          <div className="flex flex-col items-center justify-center max-w-full pointer-events-none select-none">
+            <span
+              className="font-bold px-2 py-0.5 rounded break-words max-w-full whitespace-pre-line leading-tight"
+              style={{
+                fontSize: `${fontSize}px`,
+                fontFamily,
+                fontWeight: fontWeight === 'normal' ? '600' : fontWeight,
+                fontStyle,
+                textAlign: textAlign as any,
+                color: stroke,
+              }}
+            >
+              {text}
+            </span>
+            {element.data?.subtitle && (
+              <span
+                className="text-[11px] font-normal opacity-85 px-1 mt-0.5 break-words max-w-full leading-tight"
+                style={{ color: stroke }}
+              >
+                {element.data.subtitle}
+              </span>
+            )}
+          </div>
         )}
       </div>
     </div>

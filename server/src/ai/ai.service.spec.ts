@@ -80,6 +80,63 @@ describe('AiService', () => {
     });
   });
 
+  describe('diagram', () => {
+    it('should generate a multi-tier cloud architecture diagram with smart connectors', async () => {
+      const result = await service.diagram('user-1', {
+        boardId: 'board-1',
+        prompt: 'Real-time collaborative chat platform',
+        diagramType: 'architecture',
+      });
+
+      expect(result.elements).toBeDefined();
+      const shapes = result.elements.filter((el) => el.type === 'shape');
+      const connectors = result.elements.filter((el) => el.type === 'connector');
+
+      expect(shapes.length).toBeGreaterThanOrEqual(7);
+      expect(connectors.length).toBeGreaterThanOrEqual(6);
+
+      // Verify smart connector data
+      const firstConn = connectors[0];
+      expect(firstConn.data.startPoint).toBeDefined();
+      expect(firstConn.data.endPoint).toBeDefined();
+      expect(firstConn.data.startPoint.length).toBe(2);
+      expect(firstConn.data.endPoint.length).toBe(2);
+      expect(prisma.aiUsage.create).toHaveBeenCalled();
+    });
+
+    it('should generate a comprehensive flowchart with branching decision logic', async () => {
+      const result = await service.diagram('user-1', {
+        boardId: 'board-1',
+        prompt: 'Customer checkout payment verification flow',
+        diagramType: 'flowchart',
+      });
+
+      expect(result.elements).toBeDefined();
+      const shapes = result.elements.filter((el) => el.type === 'shape');
+      const connectors = result.elements.filter((el) => el.type === 'connector');
+
+      expect(shapes.length).toBeGreaterThanOrEqual(6);
+      expect(connectors.length).toBeGreaterThanOrEqual(5);
+
+      // Verify presence of decision diamond
+      const decisionNode = shapes.find((s) => s.data.shapeType === 'diamond');
+      expect(decisionNode).toBeDefined();
+    });
+
+    it('should generate an ER diagram with database table entities', async () => {
+      const result = await service.diagram('user-1', {
+        boardId: 'board-1',
+        prompt: 'E-commerce marketplace database schema',
+        diagramType: 'er',
+      });
+
+      expect(result.elements).toBeDefined();
+      const shapes = result.elements.filter((el) => el.type === 'shape');
+      expect(shapes.length).toBeGreaterThanOrEqual(4);
+      expect(shapes.some((s) => s.data.badge === 'DATABASE')).toBe(true);
+    });
+  });
+
   describe('summary', () => {
     it('should generate an executive board summary', async () => {
       prisma.element.findMany.mockResolvedValue([

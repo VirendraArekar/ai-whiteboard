@@ -244,7 +244,7 @@ export class AiService {
       createdElements.push(created);
     }
 
-    // Create connectors connecting elements
+    // Create connectors connecting elements with smart ports
     for (const conn of connectorsData) {
       if (
         conn.startIndex !== undefined &&
@@ -254,20 +254,33 @@ export class AiService {
       ) {
         const start = createdElements[conn.startIndex];
         const end = createdElements[conn.endIndex];
+
+        const startX = start.positionX + start.width;
+        const startY = start.positionY + start.height / 2;
+        const endX = end.positionX;
+        const endY = end.positionY + end.height / 2;
+
+        const minX = Math.min(startX, endX) - 10;
+        const minY = Math.min(startY, endY) - 10;
+        const maxX = Math.max(startX, endX) + 10;
+        const maxY = Math.max(startY, endY) + 10;
+
         const connector = await this.prisma.element.create({
           data: {
             whiteboardId: boardId,
             type: 'connector',
-            positionX: start.positionX + start.width,
-            positionY: start.positionY + start.height / 2,
-            width: Math.abs(end.positionX - (start.positionX + start.width)),
-            height: 40,
-            zIndex: 100,
+            positionX: minX,
+            positionY: minY,
+            width: Math.max(maxX - minX, 30),
+            height: Math.max(maxY - minY, 30),
+            zIndex: 50,
             data: {
               startElementId: start.id,
               endElementId: end.id,
-              startPoint: [start.positionX + start.width, start.positionY + start.height / 2],
-              endPoint: [end.positionX, end.positionY + end.height / 2],
+              startPoint: [startX, startY],
+              endPoint: [endX, endY],
+              label: conn.label || '',
+              routing: 'smooth',
               stroke: '#2D6A4F',
               strokeWidth: 2,
               endArrow: true,
@@ -302,18 +315,79 @@ export class AiService {
     }
 
     if (nodes.length === 0) {
-      nodes = [
-        { label: 'Client / Web App', shape: 'rectangle', fill: '#E0F2FE', stroke: '#0284C7', x: 100, y: 250, width: 140, height: 70 },
-        { label: 'API Gateway', shape: 'diamond', fill: '#FEF3C7', stroke: '#D97706', x: 320, y: 245, width: 130, height: 80 },
-        { label: 'Auth & Logic Service', shape: 'rectangle', fill: '#E8F5E9', stroke: '#2D6A4F', x: 530, y: 180, width: 160, height: 70 },
-        { label: 'PostgreSQL Database', shape: 'circle', fill: '#EDE9FE', stroke: '#7C3AED', x: 760, y: 240, width: 120, height: 80 },
-      ];
-      connectors = [
-        { fromNodeIndex: 0, toNodeIndex: 1, label: 'HTTPS' },
-        { fromNodeIndex: 1, toNodeIndex: 2, label: 'Internal RPC' },
-        { fromNodeIndex: 2, toNodeIndex: 3, label: 'SQL queries' },
-      ];
-      tokens = 220;
+      if (diagramType === 'flowchart') {
+        nodes = [
+          { label: 'Start Request', subtitle: 'User triggers action', badge: 'START', shape: 'circle', fill: '#DCFCE7', stroke: '#16A34A', x: 100, y: 250, width: 110, height: 80 },
+          { label: 'Input Validation', subtitle: 'Schema & payload check', badge: 'STEP', shape: 'rectangle', fill: '#E0F2FE', stroke: '#0284C7', x: 280, y: 245, width: 160, height: 75 },
+          { label: 'Is Valid?', subtitle: 'Security & syntax gate', badge: 'DECISION', shape: 'diamond', fill: '#FEF3C7', stroke: '#D97706', x: 500, y: 235, width: 140, height: 95 },
+          { label: 'Process Logic', subtitle: 'Execute transactional updates', badge: 'SUCCESS', shape: 'rectangle', fill: '#E8F5E9', stroke: '#2D6A4F', x: 720, y: 160, width: 170, height: 80 },
+          { label: 'Return Error', subtitle: '400 Bad Request Response', badge: 'ERROR', shape: 'rectangle', fill: '#FEE2E2', stroke: '#DC2626', x: 720, y: 350, width: 170, height: 80 },
+          { label: 'Success Finish', subtitle: '200 OK Complete', badge: 'END', shape: 'circle', fill: '#DCFCE7', stroke: '#16A34A', x: 960, y: 160, width: 110, height: 80 },
+          { label: 'Abort Flow', subtitle: 'Audit log & Terminate', badge: 'END', shape: 'circle', fill: '#FEE2E2', stroke: '#DC2626', x: 960, y: 350, width: 110, height: 80 },
+        ];
+        connectors = [
+          { fromNodeIndex: 0, toNodeIndex: 1, label: 'Trigger' },
+          { fromNodeIndex: 1, toNodeIndex: 2, label: 'Validate' },
+          { fromNodeIndex: 2, toNodeIndex: 3, label: 'Yes / Valid' },
+          { fromNodeIndex: 2, toNodeIndex: 4, label: 'No / Invalid' },
+          { fromNodeIndex: 3, toNodeIndex: 5, label: 'Done' },
+          { fromNodeIndex: 4, toNodeIndex: 6, label: 'Reject' },
+        ];
+        tokens = 250;
+      } else if (diagramType === 'er') {
+        nodes = [
+          { label: 'users', subtitle: 'id (PK), email, password_hash, role', badge: 'DATABASE', shape: 'cylinder', fill: '#EDE9FE', stroke: '#7C3AED', x: 120, y: 160, width: 190, height: 95 },
+          { label: 'whiteboards', subtitle: 'id (PK), title, owner_id (FK)', badge: 'DATABASE', shape: 'cylinder', fill: '#EDE9FE', stroke: '#7C3AED', x: 420, y: 160, width: 190, height: 95 },
+          { label: 'board_members', subtitle: 'id (PK), user_id (FK), board_id (FK), role', badge: 'DATABASE', shape: 'cylinder', fill: '#EDE9FE', stroke: '#7C3AED', x: 270, y: 360, width: 220, height: 95 },
+          { label: 'elements', subtitle: 'id (PK), board_id (FK), type, data (JSONB)', badge: 'DATABASE', shape: 'cylinder', fill: '#EDE9FE', stroke: '#7C3AED', x: 720, y: 160, width: 210, height: 95 },
+        ];
+        connectors = [
+          { fromNodeIndex: 0, toNodeIndex: 1, label: '1 : N (Owns)' },
+          { fromNodeIndex: 0, toNodeIndex: 2, label: '1 : N (Member)' },
+          { fromNodeIndex: 1, toNodeIndex: 2, label: '1 : N (Shares)' },
+          { fromNodeIndex: 1, toNodeIndex: 3, label: '1 : N (Contains)' },
+        ];
+        tokens = 220;
+      } else if (diagramType === 'sequence') {
+        nodes = [
+          { label: 'Web Client', subtitle: 'Browser / SPA', badge: 'ACTOR', shape: 'rectangle', fill: '#E0F2FE', stroke: '#0284C7', x: 100, y: 150, width: 150, height: 75 },
+          { label: 'API Gateway', subtitle: 'Kong / Nginx', badge: 'GATEWAY', shape: 'diamond', fill: '#FEF3C7', stroke: '#D97706', x: 340, y: 145, width: 140, height: 85 },
+          { label: 'Auth Service', subtitle: 'NestJS Microservice', badge: 'SERVICE', shape: 'rectangle', fill: '#E8F5E9', stroke: '#2D6A4F', x: 570, y: 150, width: 160, height: 75 },
+          { label: 'User Database', subtitle: 'PostgreSQL 16', badge: 'DATABASE', shape: 'cylinder', fill: '#EDE9FE', stroke: '#7C3AED', x: 810, y: 145, width: 160, height: 85 },
+        ];
+        connectors = [
+          { fromNodeIndex: 0, toNodeIndex: 1, label: '1. POST /auth/login' },
+          { fromNodeIndex: 1, toNodeIndex: 2, label: '2. Forward RPC request' },
+          { fromNodeIndex: 2, toNodeIndex: 3, label: '3. SELECT user WHERE email' },
+          { fromNodeIndex: 3, toNodeIndex: 2, label: '4. Return user & password hash' },
+          { fromNodeIndex: 2, toNodeIndex: 1, label: '5. Signed JWT access token' },
+          { fromNodeIndex: 1, toNodeIndex: 0, label: '6. 200 OK (Auth cookies)' },
+        ];
+        tokens = 240;
+      } else {
+        // High quality full cloud architecture fallback
+        nodes = [
+          { label: 'Web & Mobile Client', subtitle: 'React 19 + Tailwind', badge: 'CLIENT', shape: 'rectangle', fill: '#E0F2FE', stroke: '#0284C7', x: 100, y: 280, width: 170, height: 80 },
+          { label: 'API Gateway', subtitle: 'Rate limiting & SSL termination', badge: 'GATEWAY', shape: 'diamond', fill: '#FEF3C7', stroke: '#D97706', x: 350, y: 275, width: 150, height: 90 },
+          { label: 'Auth & User Service', subtitle: 'JWT, OAuth2 & Sessions', badge: 'SERVICE', shape: 'rectangle', fill: '#E8F5E9', stroke: '#2D6A4F', x: 590, y: 140, width: 180, height: 80 },
+          { label: 'Core Whiteboard API', subtitle: 'Canvas REST & Transactions', badge: 'SERVICE', shape: 'rectangle', fill: '#E8F5E9', stroke: '#2D6A4F', x: 590, y: 280, width: 180, height: 80 },
+          { label: 'Real-Time Sync Engine', subtitle: 'Socket.IO WebSocket Gateway', badge: 'SERVICE', shape: 'rectangle', fill: '#E8F5E9', stroke: '#2D6A4F', x: 590, y: 420, width: 180, height: 80 },
+          { label: 'Redis Cache & Pub/Sub', subtitle: 'Presence & Active Rooms', badge: 'CACHE', shape: 'cylinder', fill: '#FCE7F3', stroke: '#DB2777', x: 870, y: 140, width: 190, height: 85 },
+          { label: 'PostgreSQL Database', subtitle: 'Persistent Master Storage', badge: 'DATABASE', shape: 'cylinder', fill: '#EDE9FE', stroke: '#7C3AED', x: 870, y: 280, width: 190, height: 85 },
+          { label: 'MinIO / S3 Storage', subtitle: 'Media & File Uploads', badge: 'STORAGE', shape: 'cylinder', fill: '#EDE9FE', stroke: '#7C3AED', x: 870, y: 420, width: 190, height: 85 },
+        ];
+        connectors = [
+          { fromNodeIndex: 0, toNodeIndex: 1, label: 'HTTPS / WSS' },
+          { fromNodeIndex: 1, toNodeIndex: 2, label: 'Auth verification' },
+          { fromNodeIndex: 1, toNodeIndex: 3, label: 'REST CRUD' },
+          { fromNodeIndex: 1, toNodeIndex: 4, label: 'WebSocket connection' },
+          { fromNodeIndex: 2, toNodeIndex: 5, label: 'Session cache' },
+          { fromNodeIndex: 3, toNodeIndex: 6, label: 'SQL queries' },
+          { fromNodeIndex: 4, toNodeIndex: 5, label: 'Pub/Sub room events' },
+          { fromNodeIndex: 3, toNodeIndex: 7, label: 'S3 Presigned URLs' },
+        ];
+        tokens = 320;
+      }
     }
 
     const createdElements: any[] = [];
@@ -325,16 +399,19 @@ export class AiService {
           type: 'shape',
           positionX: node.x || 100 + i * 200,
           positionY: node.y || 200,
-          width: node.width || 140,
-          height: node.height || 70,
+          width: node.width || 160,
+          height: node.height || 80,
           zIndex: i + 1,
           data: {
             shapeType: node.shape || 'rectangle',
             text: node.label,
+            subtitle: node.subtitle,
+            badge: node.badge,
             fill: node.fill || '#E8F5E9',
             stroke: node.stroke || '#2D6A4F',
             strokeWidth: 2,
-            fontSize: 14,
+            fontSize: 13,
+            fontWeight: 'bold',
           },
           createdById: userId,
         },
@@ -342,6 +419,7 @@ export class AiService {
       createdElements.push(created);
     }
 
+    // Smart connector port routing between nodes
     for (const conn of connectors) {
       if (
         conn.fromNodeIndex !== undefined &&
@@ -351,22 +429,74 @@ export class AiService {
       ) {
         const fromNode = createdElements[conn.fromNodeIndex];
         const toNode = createdElements[conn.toNodeIndex];
+
+        const fromCenter = {
+          x: fromNode.positionX + fromNode.width / 2,
+          y: fromNode.positionY + fromNode.height / 2,
+        };
+        const toCenter = {
+          x: toNode.positionX + toNode.width / 2,
+          y: toNode.positionY + toNode.height / 2,
+        };
+
+        const dx = toCenter.x - fromCenter.x;
+        const dy = toCenter.y - fromCenter.y;
+
+        let startX: number;
+        let startY: number;
+        let endX: number;
+        let endY: number;
+
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          // Horizontal primary flow
+          if (dx >= 0) {
+            startX = fromNode.positionX + fromNode.width;
+            startY = fromCenter.y;
+            endX = toNode.positionX;
+            endY = toCenter.y;
+          } else {
+            startX = fromNode.positionX;
+            startY = fromCenter.y;
+            endX = toNode.positionX + toNode.width;
+            endY = toCenter.y;
+          }
+        } else {
+          // Vertical primary flow
+          if (dy >= 0) {
+            startX = fromCenter.x;
+            startY = fromNode.positionY + fromNode.height;
+            endX = toCenter.x;
+            endY = toNode.positionY;
+          } else {
+            startX = fromCenter.x;
+            startY = fromNode.positionY;
+            endX = toCenter.x;
+            endY = toNode.positionY + toNode.height;
+          }
+        }
+
+        const minX = Math.min(startX, endX) - 12;
+        const minY = Math.min(startY, endY) - 12;
+        const maxX = Math.max(startX, endX) + 12;
+        const maxY = Math.max(startY, endY) + 12;
+
         const connector = await this.prisma.element.create({
           data: {
             whiteboardId: boardId,
             type: 'connector',
-            positionX: fromNode.positionX + fromNode.width,
-            positionY: fromNode.positionY + fromNode.height / 2,
-            width: Math.abs(toNode.positionX - (fromNode.positionX + fromNode.width)),
-            height: 40,
+            positionX: minX,
+            positionY: minY,
+            width: Math.max(maxX - minX, 30),
+            height: Math.max(maxY - minY, 30),
             zIndex: 100,
             data: {
               startElementId: fromNode.id,
               endElementId: toNode.id,
-              startPoint: [fromNode.positionX + fromNode.width, fromNode.positionY + fromNode.height / 2],
-              endPoint: [toNode.positionX, toNode.positionY + toNode.height / 2],
+              startPoint: [startX, startY],
+              endPoint: [endX, endY],
               label: conn.label || '',
-              stroke: '#2D6A4F',
+              routing: conn.routing || 'smooth',
+              stroke: conn.stroke || fromNode.data?.stroke || '#2D6A4F',
               strokeWidth: 2,
               endArrow: true,
             },
