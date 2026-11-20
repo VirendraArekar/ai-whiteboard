@@ -1,0 +1,136 @@
+# Development Progress – AI Whiteboard
+
+This document tracks progress through the 21 development phases.
+
+## Status Summary
+- **Current Phase:** Phase 21 – Docker, CI/CD & Final Documentation
+- **Completed Phases:** 21 / 21
+- **Overall Status:** Completed (Ready for Production)
+
+---
+
+## Phase Checklist
+
+- [x] **Phase 1: Project Initialization & Monorepo Setup**
+  - [x] Pre-implementation review & architecture docs
+  - [x] Monorepo structure setup (`client`, `server`, root files)
+  - [x] React 19 + TypeScript + Vite frontend scaffolding
+  - [x] NestJS + TypeScript backend scaffolding
+  - [x] Tailwind CSS v4 & styling configurations
+  - [x] Initial Git commit & verification
+- [x] **Phase 2: PostgreSQL Setup & Prisma ORM**
+  - [x] Standard PostgreSQL schema design (`schema.prisma`)
+  - [x] User, Whiteboard, WhiteboardMember, Element, AiUsage, RefreshToken, Upload models
+  - [x] Docker Compose configuration for PostgreSQL and MinIO
+  - [x] DatabaseModule and PrismaService with health checks
+  - [x] Environment variable templates (.env.example)
+  - [x] Prisma Client generation and verification
+- [x] **Phase 3: Backend Foundation & Infrastructure**
+  - [x] Environment validation and Configuration module
+  - [x] Global ValidationPipe with DTO transforms
+  - [x] AllExceptionsFilter with structured error envelope
+  - [x] LoggingInterceptor with HTTP request metrics
+  - [x] Swagger OpenAPI configuration on `/api/docs`
+  - [x] Security headers (Helmet), CORS, and Throttler rate limiting
+  - [x] HealthModule with `/api/health` endpoint
+- [x] **Phase 4: Authentication & User Management**
+  - [x] User registration with password hashing
+  - [x] Login with JWT access and refresh token issuance
+  - [x] Refresh token rotation & revocation tracking
+  - [x] Logout, forgot-password, and reset-password flows
+  - [x] User profile retrieval, update, and collaborator search
+  - [x] Passport-JWT strategy, JwtAuthGuard, @CurrentUser decorator
+  - [x] Unit test suite for AuthService
+- [x] **Phase 5: Whiteboard CRUD & RBAC**
+  - [x] Whiteboard creation, search, listing, tabs, and sorting
+  - [x] Whiteboard details, metadata update, deletion, and duplicate
+  - [x] Member management: invite by email, role change, removal
+  - [x] BoardRoleGuard and @RequireBoardRoles decorator (OWNER, EDITOR, VIEWER)
+  - [x] Unit test suite for WhiteboardsService
+- [x] **Phase 6: Element Persistence & Batching**
+  - [x] Element CRUD APIs with JSONB attributes
+  - [x] Transactional bulk operations (create, update, delete)
+  - [x] Z-index ordering and coordinate preservation
+  - [x] Unit test suite for ElementsService
+- [x] **Phase 7: Real-Time WebSocket Gateway**
+  - [x] NestJS WebSocket Gateway with Socket.IO
+  - [x] Handshake JWT authentication
+  - [x] Whiteboard room join/leave and presence roster
+  - [x] Ephemeral live cursor broadcasting (no DB writes)
+  - [x] Live element sync and real-time freehand stroke broadcasting
+  - [x] Unit test suite for CollaborationService
+- [x] **Phase 8: S3/MinIO Object Storage & Uploads**
+  - [x] AWS SDK S3 client for MinIO and AWS S3
+  - [x] Multer image file upload with 5MB validation
+  - [x] PostgreSQL metadata tracking in uploads table
+  - [x] Direct and proxy stream endpoints for canvas assets
+  - [x] Unit test suite for UploadsService
+- [x] **Phase 9: Google Gemini AI Module**
+  - [x] Dedicated Gemini AI module with GoogleGenAI SDK
+  - [x] AI Brainstorming service (structured sticky notes)
+  - [x] AI Roadmap and outline generator (milestones + connectors)
+  - [x] AI Diagram generator (services, databases, gateways + arrows)
+  - [x] AI Chart generator (bar, line, pie, donut)
+  - [x] AI Element editing (rewrite, summarize, bullet points)
+  - [x] AI Board summary generator
+  - [x] Token tracking in ai_usage table
+  - [x] Unit test suite for AiService
+- [x] **Phase 10: Frontend Foundation & Design System**
+  - [x] TypeScript interfaces and Canvas types
+  - [x] Axios instance with auto JWT refresh queue
+  - [x] Socket.IO client singleton with auth reconnect
+  - [x] Zustand state stores: auth, whiteboard, canvas, collaboration, AI
+  - [x] Forest green theme and reusable UI components (Button, Input, Modal, Avatar, Navbar, ProtectedRoute)
+- [x] **Phase 11: Landing Page & Authentication UI**
+  - [x] SaaS landing page with hero, interactive mockup, features, pricing, and footer
+  - [x] User registration with validation and error toasts
+  - [x] Login page with credentials and redirection
+  - [x] Forgot password and token-based reset password views
+  - [x] User settings page with profile update and password change
+- [x] **Phase 12: Dashboard UI**
+  - [x] Whiteboard grid with responsive cards, timestamps, and role badges
+  - [x] Tabs (All, Mine, Shared, Recent) and search with sorting
+  - [x] Create whiteboard modal with starter templates
+  - [x] Rename, duplicate, and delete confirmation modals
+- [x] **Phase 13: Infinite Canvas Engine**
+  - [x] Coordinate transforms (screen <-> world)
+  - [x] Smooth anchored mouse wheel zoom and pan
+  - [x] Background modes (dots, grid, plain, dark)
+  - [x] Multi-selection marquee, drag-and-drop, 8 resize handles, rotation
+- [x] **Phase 14: Whiteboard Drawing & Annotation Tools**
+  - [x] Pressure-sensitive freehand stroke ribbons with Perfect Freehand
+  - [x] Editable text with rich font properties
+  - [x] Sticky notes with pastel palettes
+  - [x] Geometric shapes (rect, circle, triangle, diamond, star, cylinder)
+  - [x] Connectors with arrowheads
+  - [x] Floating contextual property toolbar
+- [x] **Phase 15: Charts & Image Insertion**
+  - [x] Interactive SVG charts (bar, line, pie, donut)
+  - [x] Chart data editor modal
+  - [x] S3/MinIO image upload, placement, and resizing
+- [x] **Phase 16: History, Clipboard & Export**
+  - [x] Undo/Redo stack with keyboard shortcuts
+  - [x] Copy, paste, duplicate, delete
+  - [x] PNG and vector SVG export
+- [x] **Phase 17: Board Sharing & Permissions UI**
+  - [x] Share modal with email invite
+  - [x] Role management (Owner, Editor, Viewer)
+  - [x] Read-only UI enforcement for Viewers
+- [x] **Phase 18: Real-Time Collaborative Canvas UI**
+  - [x] Socket.IO room lifecycle
+  - [x] Live collaborator cursors with user badges and colors
+  - [x] Real-time element updates without local drag jitter
+- [x] **Phase 19: AI Assistant UI & Workflows**
+  - [x] Gemini AI drawer with multi-tab interface
+  - [x] Brainstorm, diagram, roadmap, chart, edit, summary workflows
+- [x] **Phase 20: Testing & Optimization**
+  - [x] Backend Jest tests (31 tests passing)
+  - [x] Frontend Vitest tests (9 tests passing)
+  - [x] Code splitting and performance verification
+- [x] **Phase 21: Docker, CI/CD & Final Documentation**
+  - [x] Multi-stage Dockerfile for server
+  - [x] Multi-stage Dockerfile for client with Nginx
+  - [x] Full Docker Compose orchestration
+  - [x] GitHub Actions CI workflow
+  - [x] Comprehensive README and API reference documentation
+
