@@ -46,6 +46,13 @@ An AI-powered collaborative whiteboard web application built with **React 19**, 
 
 ## 📸 Screenshots (Light Theme)
 
+### 📐 AI-Generated Architecture Diagram (URL Shortener System)
+> High-performance URL shortener distributed system architecture generated with Google Gemini AI — featuring web/mobile ingress, API gateway rate limiting, URL shortening & redirection microservices, Redis LRU cache, Kafka stream ingestion, and PostgreSQL storage connected with smart vector routing.
+
+![URL Shortener System Architecture Whiteboard](docs/screenshots/11-url-shortener-architecture.png)
+
+---
+
 ### 🎨 Infinite Canvas Workspace & Collaboration
 > Full-featured infinite canvas with pressure-sensitive drawing, geometric shapes, sticky notes, editable charts, layer ordering, and live minimap navigation.
 
