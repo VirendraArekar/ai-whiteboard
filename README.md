@@ -44,6 +44,57 @@ An AI-powered collaborative whiteboard web application built with **React 19**, 
 
 ---
 
+## 📸 Screenshots (Light Theme)
+
+### 🎨 Infinite Canvas Workspace & Collaboration
+> Full-featured infinite canvas with pressure-sensitive drawing, geometric shapes, sticky notes, editable charts, layer ordering, and live minimap navigation.
+
+![Whiteboard Canvas Workspace](docs/screenshots/06-whiteboard-canvas.png)
+
+---
+
+### 🤖 Google Gemini AI Assistant
+> Interactive AI drawer providing one-click brainstorming sticky note clusters, technical architecture diagrams, outlines, and board executive summaries.
+
+![Google Gemini AI Assistant Drawer](docs/screenshots/07-ai-assistant-drawer.png)
+
+---
+
+### 📊 Whiteboard Dashboard & Templates
+> Multi-board management with grid view, template starters (Flowchart, Kanban, Retrospective), search filtering, and sorting.
+
+![Dashboard Page](docs/screenshots/05-dashboard-page.png)
+
+---
+
+### 🌐 Landing Page
+> Clean, responsive hero showcase highlighting product capabilities, live collaboration, and AI integrations.
+
+![Landing Page](docs/screenshots/01-landing-page.png)
+
+---
+
+### 📥 High-Fidelity Export & Team Collaboration Modals
+| Export Board (PNG, SVG, JSON) | Share & Manage Board Permissions |
+| :---: | :---: |
+| ![Export Modal](docs/screenshots/08-export-modal.png) | ![Share Modal](docs/screenshots/09-share-modal.png) |
+
+---
+
+### 🔐 Authentication & Account Management
+| User Login | User Registration | Password Recovery |
+| :---: | :---: | :---: |
+| ![Login Page](docs/screenshots/02-login-page.png) | ![Register Page](docs/screenshots/03-register-page.png) | ![Forgot Password Page](docs/screenshots/04-forgot-password-page.png) |
+
+---
+
+### ⚙️ User Profile & Settings
+> Account management, profile details, and security controls.
+
+![User Settings](docs/screenshots/10-settings-page.png)
+
+---
+
 ## 🛠 Technology Stack
 
 ### Frontend
